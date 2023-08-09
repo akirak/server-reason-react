@@ -2718,46 +2718,59 @@ module Dict : Dictionary = struct
   (** Provide utilities for JS dictionary object *)
 
   type key = string
-  type 'a t = (key, 'a) Hashtbl.t
+  type 'a t = { mutable data : (key * 'a) array }
 
-  let empty () : 'a t = Hashtbl.create 10
+  exception NotFound
 
-  let entries (dict : 'a t) : (string * 'a) array =
-    Hashtbl.fold (fun k v acc -> (k, v) :: acc) dict [] |> Stdlib.Array.of_list
+  let create data = { data }
+  let empty () : 'a t = create [||]
+  let entries (dict : 'a t) : (string * 'a) array = dict.data
 
-  let get (dict : 'a t) (k : key) : 'a option =
-    try Some (Hashtbl.find dict k) with Not_found -> None
+  let get (dict : ('a * 'b) array) (k : 'a) : 'b option =
+    let n = Stdlib.Array.length dict in
+    let rec get' i =
+      if i >= n then None
+      else
+        let k', x = Stdlib.Array.get dict i in
+        if k = k' then Some x else get' (i + 1)
+    in
+    get' 0
 
   let map (f : 'a -> 'b) (dict : 'a t) =
-    Hashtbl.fold
-      (fun k v acc ->
-        Hashtbl.add acc k (f v);
-        acc)
-      dict (empty ())
+    Stdlib.Array.map (fun (k, a) -> (k, f a)) dict.data
 
-  let set (dict : 'a t) (k : key) (x : 'a) : unit = Hashtbl.replace dict k x
+  let set (_dict : 'a t) (_k : key) (_x : 'a) : unit =
+    (* let rec set' i =
+          if i >= n then raise NotFound
+          else
+           let k', _ = Stdlib.Array.get dict i in
+           if k = k' then Stdlib.Array.set dict i (k, x)
+           else set' (i + 1)
+       in
+       set' 0 *)
+    ()
 
   let fromList (lst : (key * 'a) list) : 'a t =
-    let length = Stdlib.List.length lst in
-    let dict = Hashtbl.create length in
-    Stdlib.List.iter (fun (k, v) -> Hashtbl.add dict k v) lst;
+    let _length = Stdlib.List.length lst in
+    let dict = [] in
+    Stdlib.Array.iter (fun (k, v) -> set dict k v) lst;
     dict
 
   let fromArray (arr : (key * 'a) array) : 'a t =
-    let length = Stdlib.Array.length arr in
-    let dict = Hashtbl.create length in
-    Stdlib.Array.iter (fun (k, v) -> Hashtbl.add dict k v) arr;
-    dict
+    Stdlib.Array.to_list arr |> fromList
 
   let keys (dict : 'a t) =
-    Hashtbl.fold (fun k _ acc -> k :: acc) dict [] |> Stdlib.Array.of_list
+    Stdlib.List.map (fun (k, _) -> k) dict |> Stdlib.Array.of_list
 
   let values (dict : 'a t) =
-    Hashtbl.fold (fun _k value acc -> value :: acc) dict []
-    |> Stdlib.Array.of_list
+    Stdlib.List.map (fun (_, value) -> value) dict |> Stdlib.Array.of_list
 
-  let unsafeGet (dict : 'a t) (k : key) : 'a = Hashtbl.find dict k
-  let unsafeDeleteKey (dict : 'a t) (key : key) = Hashtbl.remove dict key
+  let unsafeGet (dict : 'a t) (k : key) : 'a =
+    match get dict k with None -> raise NotFound | Some x -> x
+
+  let unsafeDeleteKey (_dict : 'a t) (_key : key) : unit =
+    (* List.filter (fun (k, _) -> k <> key) dict *)
+    ()
 end
 
 module Global = struct

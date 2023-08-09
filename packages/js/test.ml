@@ -412,19 +412,19 @@ let dict_tests =
       case "keys" (fun _ ->
           assert_string_array
             (Js.Dict.keys (long_obj ()))
-            [| "bar"; "david"; "foo" |]);
+            [| "david"; "foo"; "bar" |]);
       case "keys duplicated" (fun _ ->
           assert_string_array
             (Js.Dict.keys (obj_duplicated ()))
-            [| "bar"; "bar"; "foo" |]);
+            [| "foo"; "bar" |]);
       case "entries" (fun _ ->
           assert_int_dict_entries
             (Js.Dict.entries (obj ()))
-            [| ("bar", 86); ("foo", 43) |]);
+            [| ("foo", 43); ("bar", 86) |]);
       case "values" (fun _ ->
-          assert_int_array (Js.Dict.values (obj ())) [| 86; 43 |]);
+          assert_int_array (Js.Dict.values (obj ())) [| 43; 86 |]);
       case "values duplicated" (fun _ ->
-          assert_int_array (Js.Dict.values (obj_duplicated ())) [| 86; 1; 43 |]);
+          assert_int_array (Js.Dict.values (obj_duplicated ())) [| 43; 86 |]);
       case "fromList - []" (fun _ ->
           assert_int_dict_entries (Js.Dict.entries (Js.Dict.fromList [])) [||]);
       case "fromList" (fun _ ->
@@ -445,7 +445,7 @@ let dict_tests =
           let salePrices = Js.Dict.map discount prices in
           assert_int_dict_entries
             (Js.Dict.entries salePrices)
-            [| ("book", 50); ("stapler", 70); ("pen", 10) |]);
+            [| ("pen", 10); ("book", 50); ("stapler", 70) |]);
     ] )
 
 let () =
